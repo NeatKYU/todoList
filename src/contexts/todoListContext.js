@@ -1,44 +1,60 @@
-import React, { createContext, useState } from "react";
+import React, { useReducer, createContext, useContext, useRef } from "react";
 
-const TodoListContext = createContext({
-  state: {
+const initialTodo = [
+  {
     id: 1,
-    text: "",
+    text: "create project",
     done: false,
   },
-  actions: {
-    setId: () => {},
-    setText: () => {},
-    setDone: () => {},
+  {
+    id: 2,
+    text: "styling components",
+    done: false,
   },
-});
+  {
+    id: 3,
+    text: "create ContextAPI",
+    done: false,
+  },
+];
 
-const TodoListProvider = ({ children }) => {
-  const [id, setId] = useState(1);
-  const [text, setText] = useState("");
-  const [done, setDone] = useState(false);
+function reducer(state, action) {
+  switch (action.type) {
+    case "INSERT":
+      return state.concat(action.todo);
+    case "TOGGLE":
+      return state.map((todo) =>
+        todo.id === action.id ? { ...todo, done: !todo.done } : todo
+      );
+    case "REMOVE":
+      return state.filter((todo) => todo.id !== action.id);
+    default:
+      throw new Error(`Unhandled action type: ${action.type}`);
+  }
+}
 
-  const value = {
-    state: {
-      id,
-      text,
-      done,
-    },
-    actions: {
-      setId,
-      setText,
-      setDone,
-    },
-  };
+const TodoStateContext = createContext();
+const TodoDispatchContext = createContext();
+const TodoNextIdContext = createContext();
+
+export function TodoProvider({ children }) {
+  const [state, dispatch] = useReducer(reducer, initialTodo);
+  const nextId = useRef(4);
   return (
-    <TodoListContext.Provider value={value}>
-      {children}
-    </TodoListContext.Provider>
+    <TodoStateContext.Provider value={state}>
+      <TodoDispatchContext.Provider value={dispatch}>
+        <TodoNextIdContext.Provider value={nextId}>
+          {children}
+        </TodoNextIdContext.Provider>
+      </TodoDispatchContext.Provider>
+    </TodoStateContext.Provider>
   );
-};
+}
 
-const TodoListConsumer = TodoListContext.Consumer;
+export function useTodoState() {
+  return useContext(TodoStateContext);
+}
 
-export { TodoListProvider, TodoListConsumer };
-
-export default TodoListContext;
+export function useTodoDispatch() {
+  return useContext(TodoDispatchContext);
+}
